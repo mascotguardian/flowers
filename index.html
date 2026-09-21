@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Carnival of Flowers</title>
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1">
+
+<style>
+
+    body {
+        font-family: system-ui, sans-serif;
+        max-width: 1100px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        text-align: center;
+    }
+
+    h1 {
+        margin-bottom: 1.5rem;
+    }
+
+    .photo-container {
+        width: 100%;
+        height: 70vh;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #111;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    #photo {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    button {
+        font-size: 1rem;
+        padding: 0.7rem 1.4rem;
+        cursor: pointer;
+    }
+
+    #counter {
+        min-width: 90px;
+    }
+
+    #filename {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    #status {
+        color: #666;
+        margin: 2rem;
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Carnival of Flowers</h1>
+
+<div id="status">
+    Loading photographs...
+</div>
+
+<div class="photo-container">
+
+    <img id="photo"
+         alt="Slideshow photograph">
+
+</div>
+
+<div class="controls">
+
+    <button id="previous">
+        Previous
+    </button>
+
+    <span id="counter"></span>
+
+    <button id="next">
+        Next
+    </button>
+
+</div>
+
+<div id="filename"></div>
+
+
+<script>
+
+// ------------------------------------------------------------
+// GitHub repository settings
+// ------------------------------------------------------------
+//
+// Change these three values.
+//
+// Example:
+// username = "paul123"
+// repository = "FamilyPhotos"
+// folder = "images"
+// ------------------------------------------------------------
+
+const username = "YOUR-GITHUB-USERNAME";
+const repository = "YOUR-REPOSITORY-NAME";
+const folder = "images";
+
+
+// ------------------------------------------------------------
+// Variables
+// ------------------------------------------------------------
+
+let images = [];
+let current = 0;
+
+
+// ------------------------------------------------------------
+// Elements
+// ------------------------------------------------------------
+
+const photo = document.getElementById("photo");
+const counter = document.getElementById("counter");
+const filename = document.getElementById("filename");
+const status = document.getElementById("status");
+
+
+// ------------------------------------------------------------
+// Find images in the GitHub directory
+// ------------------------------------------------------------
+
+async function loadImages() {
+
+    const apiURL =
+        `https://api.github.com/repos/${username}/${repository}/contents/${folder}`;
+
+    try {
+
+        const response = await fetch(apiURL);
+
+        if (!response.ok) {
+            throw new Error(
+                "GitHub returned " + response.status
+            );
+        }
+
+        const files = await response.json();
+
+        const allowedExtensions = [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".webp",
+            ".avif"
+        ];
+
+        images = files
+
+            .filter(file =>
+                file.type === "file" &&
+                allowedExtensions.some(ext =>
+                    file.name.toLowerCase().endsWith(ext)
+                )
+            )
+
+            .sort((a, b) =>
+                a.name.localeCompare(
+                    b.name,
+                    undefined,
+                    { numeric: true }
+                )
+            );
+
+        if (images.length === 0) {
+            throw new Error(
+                "No photographs were found."
+            );
+        }
+
+        status.style.display = "none";
+
+        showPhoto(0);
+
+    }
+
+    catch (error) {
+
+        status.textContent =
+            "Unable to load photographs: " +
+            error.message;
+
+        console.error(error);
+
+    }
+}
+
+
+// ------------------------------------------------------------
+// Display photograph
+// ------------------------------------------------------------
+
+function showPhoto(number) {
+
+    current =
+        (number + images.length) %
+        images.length;
+
+    photo.src =
+        images[current].download_url;
+
+    photo.alt =
+        images[current].name;
+
+    counter.textContent =
+        `${current + 1} / ${images.length}`;
+
+    filename.textContent =
+        images[current].name;
+}
+
+
+// ------------------------------------------------------------
+// Buttons
+// ------------------------------------------------------------
+
+document
+    .getElementById("next")
+    .addEventListener("click", function () {
+
+        showPhoto(current + 1);
+
+    });
+
+
+document
+    .getElementById("previous")
+    .addEventListener("click", function () {
+
+        showPhoto(current - 1);
+
+    });
+
+
+// ------------------------------------------------------------
+// Keyboard controls
+// ------------------------------------------------------------
+
+document.addEventListener("keydown", function(event) {
+
+    if (event.key === "ArrowRight") {
+        showPhoto(current + 1);
+    }
+
+    if (event.key === "ArrowLeft") {
+        showPhoto(current - 1);
+    }
+
+});
+
+
+// ------------------------------------------------------------
+// Start
+// ------------------------------------------------------------
+
+loadImages();
+
+</script>
+
+</body>
+</html>
